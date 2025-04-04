@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using Recursos_Humanos.Models;
 
 namespace Recursos_Humanos.Controllers
 {
+    [Authorize(Roles = "Administrador de Recursos Humanos,Gestor de Personal,Jefe de Departamento,Empleado")]
     public class SalariosController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -44,14 +46,14 @@ namespace Recursos_Humanos.Controllers
 
             return View(salariosModel);
         }
-
+        [Authorize(Roles = "Administrador de Recursos Humanos")]
         // GET: Salarios/Create
         public IActionResult Create()
         {
             ViewData["EmpleadoId"] = new SelectList(_context.Empleados, "Id", "Id");
             return View();
         }
-
+        [Authorize(Roles = "Administrador de Recursos Humanos")]
         // POST: Salarios/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
@@ -68,7 +70,7 @@ namespace Recursos_Humanos.Controllers
             ViewData["EmpleadoId"] = new SelectList(_context.Empleados, "Id", "Id", salariosModel.EmpleadoId);
             return View(salariosModel);
         }
-
+        [Authorize(Roles = "Administrador de Recursos Humanos")]
         // GET: Salarios/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
@@ -85,7 +87,7 @@ namespace Recursos_Humanos.Controllers
             ViewData["EmpleadoId"] = new SelectList(_context.Empleados, "Id", "Id", salariosModel.EmpleadoId);
             return View(salariosModel);
         }
-
+        [Authorize(Roles = "Administrador de Recursos Humanos")]
         // POST: Salarios/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
@@ -121,7 +123,7 @@ namespace Recursos_Humanos.Controllers
             ViewData["EmpleadoId"] = new SelectList(_context.Empleados, "Id", "Id", salariosModel.EmpleadoId);
             return View(salariosModel);
         }
-
+        [Authorize(Roles = "Administrador de Recursos Humanos")]
         // GET: Salarios/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
@@ -140,7 +142,7 @@ namespace Recursos_Humanos.Controllers
 
             return View(salariosModel);
         }
-
+        [Authorize(Roles = "Administrador de Recursos Humanos")]
         // POST: Salarios/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]

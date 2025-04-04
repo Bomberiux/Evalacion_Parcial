@@ -27,7 +27,7 @@ namespace Recursos_Humanos.Controllers
             var applicationDbContext = _context.Evaluaciones.Include(e => e.Empleado);
             return View(await applicationDbContext.ToListAsync());
         }
-
+        [Authorize(Roles = "Jefe de Departamento,Empleado")]
         // GET: Evaluaciones/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -46,7 +46,7 @@ namespace Recursos_Humanos.Controllers
 
             return View(evaluacionesModel);
         }
-
+        [Authorize(Roles = "Jefe de Departamento")]
         // GET: Evaluaciones/Create
         public IActionResult Create()
         {
@@ -70,7 +70,7 @@ namespace Recursos_Humanos.Controllers
             ViewData["EmpleadoId"] = new SelectList(_context.Empleados, "Id", "Id", evaluacionesModel.EmpleadoId);
             return View(evaluacionesModel);
         }
-
+        [Authorize(Roles = "Jefe de Departamento")]
         // GET: Evaluaciones/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
@@ -87,7 +87,7 @@ namespace Recursos_Humanos.Controllers
             ViewData["EmpleadoId"] = new SelectList(_context.Empleados, "Id", "Id", evaluacionesModel.EmpleadoId);
             return View(evaluacionesModel);
         }
-
+        [Authorize(Roles = "Jefe de Departamento")]
         // POST: Evaluaciones/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
@@ -123,7 +123,7 @@ namespace Recursos_Humanos.Controllers
             ViewData["EmpleadoId"] = new SelectList(_context.Empleados, "Id", "Id", evaluacionesModel.EmpleadoId);
             return View(evaluacionesModel);
         }
-
+        [Authorize(Roles = "Jefe de Departamento")]
         // GET: Evaluaciones/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
@@ -142,7 +142,7 @@ namespace Recursos_Humanos.Controllers
 
             return View(evaluacionesModel);
         }
-
+        [Authorize(Roles = "Jefe de Departamento")]
         // POST: Evaluaciones/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
