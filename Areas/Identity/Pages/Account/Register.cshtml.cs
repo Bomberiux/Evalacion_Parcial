@@ -1,7 +1,3 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-#nullable disable
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -31,7 +27,6 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<UsuariosModel> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
-
         private readonly RoleManager<IdentityRole> _roles;
 
         public RegisterModel(
@@ -39,7 +34,8 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
             IUserStore<UsuariosModel> userStore,
             SignInManager<UsuariosModel> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender, RoleManager<IdentityRole> roles)
+            IEmailSender emailSender,
+            RoleManager<IdentityRole> roles)
         {
             _userManager = userManager;
             _userStore = userStore;
@@ -50,37 +46,19 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
             _roles = roles;
         }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         [BindProperty]
         public InputModel Input { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public string ReturnUrl { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public IList<AuthenticationScheme> ExternalLogins { get; set; }
 
-        /// <summary>
-        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
-        ///     directly from your code. This API may change or be removed in future releases.
-        /// </summary>
         public class InputModel
         {
-
             [Required]
             [EmailAddress]
             [Display(Name = "Email")]
             public string Email { get; set; }
-
 
             [Required]
             [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
@@ -88,26 +66,30 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
             [Display(Name = "Password")]
             public string Password { get; set; }
 
-
             [DataType(DataType.Password)]
             [Display(Name = "Confirm password")]
             [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
             public string ConfirmPassword { get; set; }
-
 
             public string RoleId { get; set; }
 
             public string Cedula { get; set; }
         }
 
-
         public async Task OnGetAsync(string returnUrl = null)
         {
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
-            ViewData["RolesId"] = new SelectList(_roles.Roles, "Name", "Name");
+            // Verificar si el usuario actual tiene el rol de "Administrador de Recursos Humanos"
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null || !await _userManager.IsInRoleAsync(user, "Administrador de Recursos Humanos"))
+            {
+                // Si no tiene el rol adecuado, redirigir a la página de inicio o mostrar un error
+                RedirectToPage("/AccessDenied"); // Redirige a una página de "Acceso denegado" o la página principal
+            }
 
+            ViewData["RolesId"] = new SelectList(_roles.Roles, "Name", "Name");
         }
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
@@ -115,25 +97,34 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
             returnUrl ??= Url.Content("~/");
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+            // Verificar si el usuario actual tiene el rol de "Administrador de Recursos Humanos"
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null || !await _userManager.IsInRoleAsync(user, "Administrador de Recursos Humanos"))
+            {
+                // Si no tiene el rol adecuado, mostrar un error y no permitir el registro
+                ModelState.AddModelError(string.Empty, "No tienes permisos para registrar usuarios.");
+                ViewData["RolesId"] = new SelectList(_roles.Roles, "Name", "Name");
+                return Page();
+            }
+
             if (ModelState.IsValid)
             {
-                var user = CreateUser();
+                var newUser = CreateUser();
+                newUser.Cedula = Input.Cedula;
 
-                user.Cedula = Input.Cedula;
-
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-                await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-                var result = await _userManager.CreateAsync(user, Input.Password);
+                await _userStore.SetUserNameAsync(newUser, Input.Email, CancellationToken.None);
+                await _emailStore.SetEmailAsync(newUser, Input.Email, CancellationToken.None);
+                var result = await _userManager.CreateAsync(newUser, Input.Password);
 
                 if (result.Succeeded)
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-
-                    var roles = await _roles.FindByNameAsync(Input.RoleId);   //ahora tiene el nombre
+                    var roles = await _roles.FindByNameAsync(Input.RoleId);
                     if (roles != null)
                     {
-                        await _userManager.AddToRoleAsync(user, roles.Name);
+                        await _userManager.AddToRoleAsync(newUser, roles.Name);
                     }
                     else
                     {
@@ -143,16 +134,9 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
                         return Page();
                     }
 
-
-
-                    var userId = await _userManager.GetUserIdAsync(user);
-                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                    var userId = await _userManager.GetUserIdAsync(newUser);
+                    var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-
-
-
-
 
                     var callbackUrl = Url.Page(
                         "/Account/ConfirmEmail",
@@ -169,18 +153,17 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
                     }
                     else
                     {
-                        await _signInManager.SignInAsync(user, isPersistent: false);
+                        await _signInManager.SignInAsync(newUser, isPersistent: false);
                         return LocalRedirect(returnUrl);
                     }
                 }
+
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
-
                 }
             }
 
-            // If we got this far, something failed, redisplay form
             ViewData["RolesId"] = new SelectList(_roles.Roles, "Name", "Name");
             return Page();
         }
@@ -194,8 +177,7 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
             catch
             {
                 throw new InvalidOperationException($"Can't create an instance of '{nameof(UsuariosModel)}'. " +
-                    $"Ensure that '{nameof(UsuariosModel)}' is not an abstract class and has a parameterless constructor, or alternatively " +
-                    $"override the register page in /Areas/Identity/Pages/Account/Register.cshtml");
+                    $"Ensure that '{nameof(UsuariosModel)}' is not an abstract class and has a parameterless constructor.");
             }
         }
 
@@ -209,4 +191,3 @@ namespace Recursos_Humanos.Areas.Identity.Pages.Account
         }
     }
 }
-
