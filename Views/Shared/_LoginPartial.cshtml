@@ -1,11 +1,19 @@
-﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity
 @inject SignInManager<UsuariosModel> SignInManager
 @inject UserManager<UsuariosModel> UserManager
 
 <ul class="navbar-nav">
     @if (SignInManager.IsSignedIn(User))
     {
-        <!-- Si el usuario está logueado, mostramos un enlace para su gestión y el logout -->
+        <!-- Verificamos si el usuario tiene el rol "Administrador de Recursos Humanos" -->
+        @if (await UserManager.IsInRoleAsync(await UserManager.GetUserAsync(User), "Administrador de Recursos Humanos"))
+        {
+            <!-- Si el usuario tiene el rol, mostramos el enlace para su gestión y el logout -->
+            <li class="nav-item">
+                <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Register">Register</a>
+            </li>
+        }
+
         <li class="nav-item">
             <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @User.Identity?.Name!</a>
         </li>
@@ -14,13 +22,13 @@
                 <button type="submit" class="nav-link btn btn-link text-dark">Logout</button>
             </form>
         </li>
+
     }
     else
     {
         <!-- Si el usuario no está logueado, mostramos los enlaces para Login y Register -->
         <li class="nav-item">
             <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Login</a>
-       
         </li>
     }
 </ul>
